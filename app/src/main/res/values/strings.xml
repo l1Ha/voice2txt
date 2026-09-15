@@ -1,0 +1,41 @@
+<resources>
+    <string name="app_name">Voice2Txt</string>
+    <string name="app_description">本地音视频语音转文字与双版本对照</string>
+    
+    <!-- Navigation -->
+    <string name="nav_transcribe">转写</string>
+    <string name="nav_history">历史</string>
+    <string name="nav_settings">设置</string>
+    
+    <!-- Actions -->
+    <string name="select_audio_file">选择音频文件</string>
+    <string name="select_video_file">选择视频文件</string>
+    <string name="start_record">开始录音</string>
+    <string name="stop_record">停止录音</string>
+    <string name="start_transcribe">开始转写</string>
+    <string name="cancel">取消</string>
+    <string name="copy_raw">复制原始文本</string>
+    <string name="copy_polished">复制润色文本</string>
+    <string name="copy_both">复制双版本对照</string>
+    <string name="export_txt">导出为 TXT</string>
+    <string name="export_md">导出为 Markdown</string>
+    <string name="export_srt">导出为 SRT 字幕</string>
+    
+    <!-- Comparison -->
+    <string name="tab_raw">原始转录</string>
+    <string name="tab_polished">智能润色</string>
+    <string name="tab_compare">双语/双版对照</string>
+    <string name="diff_highlights">文本对比高亮</string>
+    
+    <!-- Status -->
+    <string name="status_ready">就绪</string>
+    <string name="status_extracting_audio">正在提取音轨...</string>
+    <string name="status_transcribing">正在离线转写中...</string>
+    <string name="status_polishing">正在智能润色优化...</string>
+    <string name="status_completed">处理完成</string>
+    <string name="status_error">处理出错</string>
+    
+    <!-- Settings -->
+    <string name="model_management">离线模型管理</string>
+    <string name="polish_settings">润色规则设置</string>
+</resources>

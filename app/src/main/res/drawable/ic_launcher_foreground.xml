@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- Sound wave and document icon -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M54,28c-4.42,0 -8,3.58 -8,8v24c0,4.42 3.58,8 8,8s8,-3.58 8,-8V36C62,31.58 58.42,28 54,28z" />
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M71,52c0,9.39 -7.61,17 -17,17s-17,-7.61 -17,-17H31c0,11.72 8.65,21.46 20,22.82V82h6v-7.18c11.35,-1.36 20,-11.1 20,-22.82H71z" />
+</vector>

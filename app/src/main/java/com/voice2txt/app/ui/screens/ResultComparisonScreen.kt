@@ -2,20 +2,15 @@ package com.voice2txt.app.ui.screens
 
 import android.content.Intent
 import android.widget.Toast
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.selection.selectable
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Download
@@ -28,7 +23,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.ModalBottomSheet
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
@@ -37,7 +31,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -58,8 +51,12 @@ import java.io.File
 @Composable
 fun ResultComparisonScreen(
     result: TranscriptionResult,
+    currentPositionMs: Long = 0L,
+    isPlaying: Boolean = false,
+    onTogglePlay: () -> Unit = {},
+    onSpeedChange: (Float) -> Unit = {},
     onBack: () -> Unit,
-    onPlayAudioSegment: (Long, Long) -> Unit,
+    onPlayAudioSegment: (Long, Long, Boolean) -> Unit,
     onExport: (ExportFormat, ExportTarget) -> File,
     modifier: Modifier = Modifier
 ) {
@@ -69,7 +66,6 @@ fun ResultComparisonScreen(
     var selectedFormat by remember { mutableStateOf(ExportFormat.MARKDOWN) }
 
     val sheetState = rememberModalBottomSheetState()
-    val scope = rememberCoroutineScope()
 
     Scaffold(
         topBar = {
@@ -107,7 +103,11 @@ fun ResultComparisonScreen(
     ) { innerPadding ->
         ComparisonView(
             result = result,
+            currentPositionMs = currentPositionMs,
+            isPlaying = isPlaying,
+            onTogglePlay = onTogglePlay,
             onPlayAudioSegment = onPlayAudioSegment,
+            onSpeedChange = onSpeedChange,
             modifier = modifier.padding(innerPadding)
         )
 
@@ -141,9 +141,9 @@ fun ResultComparisonScreen(
                     Spacer(modifier = Modifier.height(6.dp))
 
                     listOf(
-                        ExportTarget.BOTH_SIDE_BY_SIDE to "双版本对照 (推荐，包含润色与原始对照)",
+                        ExportTarget.BOTH_SIDE_BY_SIDE to "双版本对照 (包含发言人、润色与原始对照)",
                         ExportTarget.POLISHED to "仅智能润色版 (已去除口语语气词与重复词)",
-                        ExportTarget.RAW to "仅原始转录版 (包含原始字句)"
+                        ExportTarget.RAW to "仅原始转录版 (保留原音记录)"
                     ).forEach { (target, label) ->
                         Row(
                             modifier = Modifier
@@ -178,7 +178,9 @@ fun ResultComparisonScreen(
                     listOf(
                         ExportFormat.MARKDOWN to "Markdown 文档 (.md)",
                         ExportFormat.TXT to "纯文本 (.txt)",
-                        ExportFormat.SRT to "SRT 视频字幕 (.srt)"
+                        ExportFormat.SRT to "SRT 视频字幕 (.srt)",
+                        ExportFormat.VTT to "WebVTT 网页字幕 (.vtt)",
+                        ExportFormat.LRC to "LRC 动态歌词/录音轴 (.lrc)"
                     ).forEach { (format, label) ->
                         Row(
                             modifier = Modifier

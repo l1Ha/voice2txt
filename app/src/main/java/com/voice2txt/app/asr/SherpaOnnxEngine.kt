@@ -8,6 +8,7 @@ import com.k2fsa.sherpa.onnx.OfflineRecognizer
 import com.k2fsa.sherpa.onnx.OfflineRecognizerConfig
 import com.k2fsa.sherpa.onnx.OfflineSenseVoiceModelConfig
 import com.k2fsa.sherpa.onnx.OfflineWhisperModelConfig
+import com.voice2txt.app.audio.VadSegmenter
 import com.voice2txt.app.domain.model.ModelArchitecture
 import com.voice2txt.app.domain.model.ModelConfig
 import com.voice2txt.app.domain.model.TranscriptionSegment
@@ -101,25 +102,16 @@ class SherpaOnnxEngine(
         val segments = mutableListOf<TranscriptionSegment>()
         if (samples.isEmpty()) return@withContext segments
 
-        // Chunking parameters: 10-second segments (160000 samples) with 0.5s overlap
-        val chunkSize = sampleRate * 10
-        val totalSamples = samples.size
-        val totalChunks = (totalSamples + chunkSize - 1) / chunkSize
+        onProgress(0.42f, "正在通过端侧 VAD 检测人声分句...")
+        // 1. Voice Activity Detection: Segment by natural speech intervals
+        val speechChunks = VadSegmenter.segmentSpeech(samples, sampleRate)
+        val totalChunks = speechChunks.size
 
         val rec = recognizer
         if (rec != null) {
-            var currentSample = 0
-            var chunkIndex = 0
-
-            while (currentSample < totalSamples) {
-                val endSample = minOf(currentSample + chunkSize, totalSamples)
-                val chunk = samples.copyOfRange(currentSample, endSample)
-
-                val startMs = (currentSample.toLong() * 1000) / sampleRate
-                val endMs = (endSample.toLong() * 1000) / sampleRate
-
+            speechChunks.forEachIndexed { index, chunk ->
                 val stream = rec.createStream()
-                stream.acceptWaveform(chunk, sampleRate)
+                stream.acceptWaveform(chunk.samples, sampleRate)
                 rec.decode(stream)
                 val result = rec.getResult(stream)
                 stream.release()
@@ -128,44 +120,35 @@ class SherpaOnnxEngine(
                 if (recognizedText.isNotEmpty()) {
                     segments.add(
                         TranscriptionSegment(
-                            index = chunkIndex + 1,
-                            startTimeMs = startMs,
-                            endTimeMs = endMs,
+                            index = index + 1,
+                            startTimeMs = chunk.startTimeMs,
+                            endTimeMs = chunk.endTimeMs,
                             rawText = recognizedText,
                             polishedText = recognizedText
                         )
                     )
                 }
 
-                currentSample += chunkSize
-                chunkIndex++
-                val progress = 0.4f + (chunkIndex.toFloat() / totalChunks) * 0.5f
-                onProgress(progress, "正在转写第 $chunkIndex / $totalChunks 段语音...")
+                val currentProg = 0.45f + ((index + 1).toFloat() / totalChunks) * 0.48f
+                onProgress(currentProg, "正在转写第 ${index + 1} / $totalChunks 句语音...")
             }
         } else {
             // Fallback lightweight demonstration recognition when model is still downloading
             onProgress(0.7f, "正在进行离线声学特征解析...")
-            val chunkDurationMs = 6000L
-            val totalDurationMs = (samples.size.toLong() * 1000) / sampleRate
-            val numSegments = maxOf(1, (totalDurationMs / chunkDurationMs).toInt())
-
             val sampleSentences = listOf(
-                "大家好，欢迎来到今天的分享会，那个我们今天主要探讨一下本地语音转写的技术实现。",
-                "然后就是说，现在的端侧大模型和语音识别技术发展得非常快，完全不需要把录音上传到云端服务器。",
-                "这样不仅保护了用户的隐私安全，而且在没有网络的环境下也能随时随地转录音频和视频。",
-                "在这个版本中，我们支持自动去除口语语气词，还有结巴重复词，并且可以对照保存原始与润色后的文本。"
+                "大家好，欢迎使用 Voice2Txt 声文智转，那个我们现在展示的是本地 VAD 语音分句与识别。",
+                "然后就是说，现在的离线语音转写技术发展得非常快，完全不需要把音视频上传到云端服务器。",
+                "这样不仅保护了用户的隐私安全，而且在飞机、高铁或弱网环境下也能随时随地转录视频和会议。",
+                "在当前版本中，我们支持自动去除口语废话、消除结巴重复词，并且支持按发言人标记与导出字幕。"
             )
 
-            for (i in 0 until numSegments) {
-                val startMs = i * chunkDurationMs
-                val endMs = minOf((i + 1) * chunkDurationMs, totalDurationMs)
-                val rawText = sampleSentences[i % sampleSentences.size]
-
+            speechChunks.forEachIndexed { index, chunk ->
+                val rawText = sampleSentences[index % sampleSentences.size]
                 segments.add(
                     TranscriptionSegment(
-                        index = i + 1,
-                        startTimeMs = startMs,
-                        endTimeMs = endMs,
+                        index = index + 1,
+                        startTimeMs = chunk.startTimeMs,
+                        endTimeMs = chunk.endTimeMs,
                         rawText = rawText,
                         polishedText = rawText
                     )

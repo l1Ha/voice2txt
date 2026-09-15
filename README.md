@@ -1,117 +1,88 @@
 # Voice2Txt (声文智转) 🎙️📱
 
 > **完全离线、隐私安全的 Android 本地音视频语音转文字应用**  
-> 内置 Sherpa-ONNX (SenseVoice / Whisper) 端侧模型，支持原始转录与智能润色双版本对照、分句音频同步试听、多格式（TXT / Markdown / SRT 字幕）自由保存与导出。
+> 内置 Sherpa-ONNX (SenseVoice / Whisper) 端侧模型与智能 VAD 分句，支持原始转录与智能润色双版本对照、多说话人角色标记、卡拉OK式原声音画同步、多格式（TXT / Markdown / SRT / WebVTT / LRC）自由导出。
 
 ---
 
-## 🌟 核心功能特性
+## 🌟 核心功能与最新迭代特性
 
 ### 1. 100% 本地离线语音识别 (Edge ASR)
-- **绝无数据外泄**：所有语音和视频文件的转录完全在手机端侧 NPU/CPU 离线计算，不上传任何云端服务器，断网状态下也能流畅运行，彻底保护商业机密与个人隐私。
-- **先进模型架构**：采用阿里巴巴开源的 **SenseVoice-Small** 与 OpenAI **Whisper**，支持普通话、英语、粤语、日语、韩语等，识别速度最高可达实时音频的 5~10 倍，低功耗低发热。
+- **绝对隐私安全**：语音与视频数据在手机端侧 NPU/CPU 离线计算，不发起任何外部网络请求，断网或飞行模式下流畅转录，彻底保护隐私与商业机密。
+- **先进端侧模型**：集成阿里开源的 **SenseVoice-Small** 与 OpenAI **Whisper**，支持普通话、英语、粤语、日语、韩语等多语言，识别速度可达音频时长的 5~10 倍，低功耗低发热。
 
-### 2. 音视频全格式音轨抽离
-- 基于 Android 原生硬解 `MediaExtractor` 与 `MediaCodec` 管道，自动提取并重采样为 16kHz 16-bit 单声道 PCM：
+### 2. VAD 智能人声切分与静音剔除 (新特性)
+- 内置端侧自适应短时能量与过零率 **VAD（Voice Activity Detection）算法**；
+- 自动检测语音停顿，按自然语意断句分块，**彻底避免在单词/字句中间被机械切断**；
+- 自动剔除视频和长录音中的无声空白段，大幅减少模型幻觉并提升转录速度。
+
+### 3. 音视频全格式音轨抽离
+- 基于 Android 原生硬件加速解码管道（`MediaExtractor` + `MediaCodec`），自动将多媒体音轨抽取并重采样为 16kHz 16-bit 单声道 PCM：
   - **视频格式**：MP4, MKV, MOV, 3GP, AVI 等。
   - **音频格式**：MP3, M4A, AAC, WAV, FLAC, OGG 等。
-  - **实时速记**：支持直接通过手机麦克风录音，会议、演讲现场边录边记。
+  - **实时麦克风**：支持现场会议、即兴灵感语音随录随转。
 
-### 3. 双版本对照（原始转录 vs 智能润色）
-- **原始转录版 (Raw)**：忠实还原 ASR 输出的原始字词与分句时间戳，便于核对原音细节。
-- **智能润色版 (Polished)**：内置端侧自然语言清洗规则：
-  - **口语冗余词过滤**：自动清除「那个、然后、就是、就是说、呃、啊、嗯、其实、基本上来说、you know、um、uh」等口头禅与填充词。
-  - **结巴与重复词去重**：自动合并「我我我」、「这个这个」等连词卡顿。
-  - **数字与单位规范化**：将口语数字转化为标准阿拉伯数字（如「二零二六年」转化为「2026年」，「百分之八十」转化为「80%」）。
-  - **智能标点与句末问号修复**：根据语意助词（如「吗、呢、对不对」）自适应修复问号，补齐标点。
-  - **自适应段落规整**：根据停顿与语段自动划分段落，大幅改善长篇转录的可读性。
-- **逐句双版本对照视图**：提供「润色后」、「原始转录」、「逐句对比」三重视图，支持差异标记高亮，点击任意分句即可**即时播放对应时间段的音频切片**。
+### 4. 双版本对照（原始转录 vs 智能润色）
+- **原始转录版 (Raw)**：忠实呈现 ASR 输出的原始字词与分句时间戳，便于核对原音发音细节。
+- **智能润色版 (Polished)**：内置端侧自然语言清洗与修饰规则：
+  - **口语废话过滤**：自动清除「那个、然后、就是、就是说、呃、啊、嗯、其实就是、基本上来说、you know、um、uh」等填充词与口头禅；
+  - **结巴与重复词消除**：自动合并「我我我」、「这个这个」等连词卡顿；
+  - **专业术语与专有名词映射**：内置同音错别字纠正（如「基哈布 -> GitHub」、「声温 -> 声文」），可在设置中自定义拓展；
+  - **数字与单位规范化**：口述数字自动转换为标准阿拉伯数字（如「二零二六年」转换为「2026年」，「百分之八十」转换为「80%」）；
+  - **智能标点与疑问句问号修复**：结合疑问助词（「吗、呢、对不对」）自适应补齐句读与问号；
+  - **自适应段落规整**：每 2-3 句根据语意停顿自动分段，长文阅读更自然。
 
-### 4. 灵活选择与多格式导出
-- **自由选择版本**：可自由勾选「仅保存智能润色版」、「仅保存原始转录版」或「保存双版本对照」。
-- **主流格式全覆盖**：
-  - **Markdown (.md)**：带有结构化标题、元数据及双版本对比表格，适合导入 Notion、Obsidian 等知识库。
-  - **TXT (.txt)**：纯文本无格式文档。
-  - **SRT (.srt)**：带精确起止时间轴的标准字幕文件，可直接拖入剪映、PR、Final Cut Pro、Bilibili 中作为视频字幕。
-  - **系统分享**：一键调用系统分享面板，直接发送到微信、QQ、网盘或邮件。
+### 5. 多说话人对话角色标记 (Speaker Diarization) (新特性)
+- 长停顿自适应识别并标记「发言人 A / 发言人 B」；
+- 导出时自动以发言人对话气泡或表格组织，适合采访、播客与双人会议纪要。
 
-### 5. 历史记录与全文检索
-- 基于 Jetpack Room 构建本地安全数据库，保留所有转写记录，支持秒级全文关键词搜索。
+### 6. 播放器原声跟随与单句循环 (新特性)
+- **卡拉OK式实时高亮**：播放音频时，正在朗读的句子卡片会自动蓝框高亮跟随；
+- **单句循环试听**：点击单句循环按钮，反复试听模糊段落直至核对无误；
+- **倍速播放控制**：支持 0.75x、1.0x、1.25x、1.5x、2.0x 变速播放。
+
+### 7. 主流格式全覆盖导出
+- **自由选择版本**：可自由选择「仅保存智能润色版」、「仅保存原始转录版」或「保存双版本对照」。
+- **导出格式全支持**：
+  - **Markdown (.md)**：结构化标题、元数据及双版本对比表格，兼容 Notion/Obsidian；
+  - **TXT (.txt)**：纯文本无格式文档；
+  - **SRT (.srt)**：标准双语/单语字幕，无缝导入剪映、Premiere、Final Cut Pro；
+  - **WebVTT (.vtt)**：网页与 HTML5 播放器标准字幕；
+  - **LRC (.lrc)**：毫秒级时间轴动态歌词/录音切片文件；
+  - **系统分享**：一键调用系统分享面板直发微信、QQ、网盘。
 
 ---
 
 ## 🚀 手机下载与安装 (从 GitHub Releases 获取 APK)
 
-本项目已配置完整的 **GitHub Actions 自动化 CI/CD**（见 `.github/workflows/build-release.yml`）。
+本项目配置了完整的 **GitHub Actions 自动化 CI/CD**（`.github/workflows/build-release.yml`）。
 
-### 📱 方式一：直接在手机浏览器下载安装（最简便）
-1. 在手机浏览器打开你的 GitHub 仓库地址。
-2. 进入仓库右侧的 **Releases**（发行版）页面。
-3. 找到最新版本，在 **Assets** 列表中点击下载 `voice2txt-release.apk`。
-4. 下载完成后点击安装包，根据系统提示允许安装即可在手机上立即体验！
+### 📱 方式一：直接从 GitHub Releases 下载（推荐）
+1. 手机或电脑浏览器打开：[https://github.com/l1Ha/voice2txt/releases](https://github.com/l1Ha/voice2txt/releases)
+2. 在最新 Release 的 **Assets** 列表中点击下载 `voice2txt-release.apk`；
+3. 下载后点击安装即可在 Android 手机上直接运行。
 
-> **说明**：GitHub Actions 构建流程中已配置针对 Release APK 的自动签名，安装时无需手动配置签名密钥。
-
-### 💻 方式二：本地自行编译 APK
-如果你希望在电脑本地通过 Android Studio 编译：
-```bash
-# 克隆仓库
-git clone <你的GitHub仓库链接>
-cd voice2txt
-
-# 赋予 gradlew 执行权限
-chmod +x gradlew
-
-# 编译 Debug APK
-./gradlew assembleDebug
-
-# 编译 Release APK
-./gradlew assembleRelease
-```
-编译产物位于 `app/build/outputs/apk/debug/app-debug.apk` 与 `app/build/outputs/apk/release/app-release.apk`。通过数据线执行 `adb install app/build/outputs/apk/debug/app-debug.apk` 即可安装到连接的手机上。
+### 💻 方式二：本地一键发布或同步
+在项目根目录提供有两个快捷脚本：
+- **同步最新代码至 GitHub**：
+  ```bash
+  bash sync_github.sh
+  ```
+- **一键调用 API 发布新版本并触发云端打包**：
+  ```bash
+  bash create_release.sh v1.0.1
+  ```
 
 ---
 
-## 🛠️ 技术架构
+## 🛠️ 技术栈
 
-- **编程语言**：Kotlin 2.0+
-- **界面框架**：Jetpack Compose (Material 3)
-- **多媒体处理**：AndroidX Media3 (MediaExtractor, MediaCodec, ExoPlayer)
-- **离线语音识别**：Sherpa-ONNX (v1.10.36 JNI)
+- **语言**：Kotlin 2.0+
+- **界面**：Jetpack Compose (Material 3)
+- **多媒体**：AndroidX Media3 (MediaExtractor, MediaCodec, ExoPlayer)
+- **语音识别**：Sherpa-ONNX (v1.10.36) + VAD 分句
 - **数据库**：Android Jetpack Room (SQLite)
 - **异步处理**：Kotlin Coroutines & Flow
-- **架构模式**：Clean Architecture + MVVM
-
----
-
-## 📁 目录结构
-
-```
-voice2txt/
-├── .github/
-│   └── workflows/
-│       └── build-release.yml          # GitHub Actions 自动构建与发布 APK 工作流
-├── app/
-│   ├── build.gradle.kts               # 应用模块构建脚本与依赖
-│   ├── proguard-rules.pro             # 代码混淆规则
-│   └── src/main/
-│       ├── AndroidManifest.xml        # 清单文件与多媒体权限
-│       ├── java/com/voice2txt/app/
-│       │   ├── Voice2TxtApplication.kt
-│       │   ├── data/                  # Room 数据库与数据持久化
-│       │   ├── domain/
-│       │   │   ├── model/             # 领域实体（片段、结果、配置）
-│       │   │   └── polisher/          # 文本清洗、语气词剔除、数字规范化、智能标点
-│       │   ├── audio/                 # MediaExtractor 提取、录音器与 PCM 播放器
-│       │   ├── asr/                   # Sherpa-ONNX 离线识别引擎与模型管理
-│       │   └── ui/                    # Jetpack Compose UI (双版本对照、播放、历史)
-│       └── res/                       # 字符串、色彩、矢量图标与主题
-├── gradle/
-│   └── libs.versions.toml             # 统一依赖版本控制
-├── build.gradle.kts                   # 根项目构建脚本
-├── settings.gradle.kts                # 仓库配置
-└── README.md
-```
 
 ---
 

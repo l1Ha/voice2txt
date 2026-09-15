@@ -56,6 +56,12 @@ class TranscriptionRepository(private val dao: TranscriptionDao) {
             ExportFormat.SRT -> {
                 buildSrtSubtitles(result, target)
             }
+            ExportFormat.VTT -> {
+                buildVttSubtitles(result, target)
+            }
+            ExportFormat.LRC -> {
+                buildLrcLyrics(result, target)
+            }
             ExportFormat.DUAL_COMPARE -> {
                 buildDualTextComparison(result)
             }
@@ -84,7 +90,7 @@ class TranscriptionRepository(private val dao: TranscriptionDao) {
         sb.append("【分句时间戳对照】\n\n")
 
         for (seg in result.segments) {
-            sb.append("[${seg.formattedTimestamp}]\n")
+            sb.append("[${seg.formattedTimestamp}] 【${seg.speakerId}】\n")
             sb.append("  [原] ${seg.rawText}\n")
             sb.append("  [润] ${seg.polishedText}\n\n")
         }
@@ -114,12 +120,12 @@ class TranscriptionRepository(private val dao: TranscriptionDao) {
                 sb.append("\n\n---\n\n## 原始转录版\n\n")
                 sb.append(result.rawContent)
                 sb.append("\n\n---\n\n## 逐句双版本对照\n\n")
-                sb.append("| 时间区间 | 原始转录 | 智能润色 |\n")
-                sb.append("| :--- | :--- | :--- |\n")
+                sb.append("| 时间区间 | 发言人 | 原始转录 | 智能润色 |\n")
+                sb.append("| :--- | :--- | :--- | :--- |\n")
                 for (seg in result.segments) {
                     val rawClean = seg.rawText.replace("|", "\\|")
                     val polishedClean = seg.polishedText.replace("|", "\\|")
-                    sb.append("| `${seg.formattedTimestamp}` | $rawClean | $polishedClean |\n")
+                    sb.append("| `${seg.formattedTimestamp}` | ${seg.speakerId} | $rawClean | $polishedClean |\n")
                 }
             }
         }
@@ -138,6 +144,37 @@ class TranscriptionRepository(private val dao: TranscriptionDao) {
                 ExportTarget.BOTH_SIDE_BY_SIDE -> "${seg.polishedText}\n(${seg.rawText})"
             }
             sb.append("$text\n\n")
+        }
+        return sb.toString()
+    }
+
+    private fun buildVttSubtitles(result: TranscriptionResult, target: ExportTarget): String {
+        val sb = StringBuilder()
+        sb.append("WEBVTT - ${result.title}\n\n")
+        result.segments.forEachIndexed { index, seg ->
+            sb.append("${index + 1}\n")
+            sb.append("${seg.vttTimestamp}\n")
+            val text = when (target) {
+                ExportTarget.RAW -> seg.rawText
+                ExportTarget.POLISHED -> seg.polishedText
+                ExportTarget.BOTH_SIDE_BY_SIDE -> "${seg.polishedText}\n(${seg.rawText})"
+            }
+            sb.append("$text\n\n")
+        }
+        return sb.toString()
+    }
+
+    private fun buildLrcLyrics(result: TranscriptionResult, target: ExportTarget): String {
+        val sb = StringBuilder()
+        sb.append("[ti:${result.title}]\n")
+        sb.append("[by:Voice2Txt]\n")
+        for (seg in result.segments) {
+            val text = when (target) {
+                ExportTarget.RAW -> seg.rawText
+                ExportTarget.POLISHED -> seg.polishedText
+                ExportTarget.BOTH_SIDE_BY_SIDE -> "${seg.polishedText} (${seg.rawText})"
+            }
+            sb.append("${seg.lrcTimestamp}$text\n")
         }
         return sb.toString()
     }

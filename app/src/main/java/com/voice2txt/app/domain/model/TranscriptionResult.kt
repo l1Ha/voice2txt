@@ -20,10 +20,12 @@ enum class MediaType {
 }
 
 enum class ExportFormat(val extension: String, val displayName: String, val mimeType: String) {
-    TXT("txt", "纯文本 (.txt)", "text/plain"),
     MARKDOWN("md", "Markdown 文档 (.md)", "text/markdown"),
+    TXT("txt", "纯文本 (.txt)", "text/plain"),
     SRT("srt", "SRT 视频字幕 (.srt)", "application/x-subrip"),
-    DUAL_COMPARE("txt", "双版本对照 (.txt)", "text/plain"),
+    VTT("vtt", "WebVTT 网页字幕 (.vtt)", "text/vtt"),
+    LRC("lrc", "LRC 动态歌词/录音轴 (.lrc)", "text/plain"),
+    DUAL_COMPARE("txt", "双版本逐句对照 (.txt)", "text/plain"),
     JSON("json", "结构化数据 (.json)", "application/json")
 }
 

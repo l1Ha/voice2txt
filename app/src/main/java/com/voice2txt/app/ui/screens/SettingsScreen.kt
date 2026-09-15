@@ -1,6 +1,5 @@
 package com.voice2txt.app.ui.screens
 
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -16,7 +15,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Download
-import androidx.compose.material3.Button
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Divider
@@ -34,6 +32,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.voice2txt.app.domain.polisher.CustomHotwordsReplacer
 import com.voice2txt.app.ui.theme.Blue40
 import com.voice2txt.app.ui.theme.Emerald40
 import com.voice2txt.app.ui.theme.TextPrimary
@@ -57,7 +56,7 @@ fun SettingsScreen(
             .padding(16.dp)
     ) {
         Text(
-            text = "设置与离线模型",
+            text = "设置与功能配置",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
@@ -73,7 +72,7 @@ fun SettingsScreen(
             color = TextPrimary
         )
         Text(
-            text = "所有模型均在手机本地运行，无需任何联网请求",
+            text = "完全在手机端侧 NPU/CPU 离线运行，0 联网请求，保障隐私安全",
             fontSize = 12.sp,
             color = TextSecondary
         )
@@ -154,13 +153,13 @@ fun SettingsScreen(
 
         // Section 2: Polishing Rules
         Text(
-            text = "智能文本润色规则",
+            text = "智能文本润色与清洗规则",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
             color = TextPrimary
         )
         Text(
-            text = "自定义生成润色版本时应用的规则过滤",
+            text = "自适应去除语气冗余词、口语重复、修复标点与段落",
             fontSize = 12.sp,
             color = TextSecondary
         )
@@ -206,11 +205,59 @@ fun SettingsScreen(
                 Divider(modifier = Modifier.padding(vertical = 8.dp))
 
                 RuleSwitchRow(
+                    title = "自动对话角色/发言人识别",
+                    subtitle = "长停顿自适应识别并标记「发言人 A / 发言人 B」",
+                    checked = polishOptions.autoSpeakerDiarization,
+                    onCheckedChange = { viewModel.updatePolishOptions(polishOptions.copy(autoSpeakerDiarization = it)) }
+                )
+                Divider(modifier = Modifier.padding(vertical = 8.dp))
+
+                RuleSwitchRow(
                     title = "自动段落规整与换行",
                     subtitle = "每2-3句根据语意自适应分段，提升长文阅读体验",
                     checked = polishOptions.autoParagraph,
                     onCheckedChange = { viewModel.updatePolishOptions(polishOptions.copy(autoParagraph = it)) }
                 )
+            }
+        }
+
+        Spacer(modifier = Modifier.height(16.dp))
+
+        // Section 3: Hotwords / Terminology Corrections
+        Text(
+            text = "专业术语与专有名词纠错",
+            fontSize = 16.sp,
+            fontWeight = FontWeight.Bold,
+            color = TextPrimary
+        )
+        Text(
+            text = "内置常见同音词及技术术语映射纠错",
+            fontSize = 12.sp,
+            color = TextSecondary
+        )
+
+        Spacer(modifier = Modifier.height(12.dp))
+
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            shape = RoundedCornerShape(12.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
+        ) {
+            Column(modifier = Modifier.padding(14.dp)) {
+                CustomHotwordsReplacer.DEFAULT_RULES.take(6).forEachIndexed { index, rule ->
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 4.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(text = "「${rule.pattern}」", fontSize = 13.sp, color = TextSecondary)
+                        Text(text = "➔", fontSize = 13.sp, color = TextSecondary)
+                        Text(text = "「${rule.replacement}」", fontSize = 13.sp, fontWeight = FontWeight.Bold, color = Blue40)
+                    }
+                    if (index < 5) Divider(modifier = Modifier.padding(vertical = 4.dp))
+                }
             }
         }
 

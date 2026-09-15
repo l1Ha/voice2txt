@@ -20,9 +20,17 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Compare
 import androidx.compose.material.icons.filled.ContentCopy
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
+import androidx.compose.material.icons.filled.Speed
 import androidx.compose.material.icons.filled.TextFields
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Tab
@@ -30,6 +38,7 @@ import androidx.compose.material3.TabRow
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -49,11 +58,17 @@ import com.voice2txt.app.ui.theme.TextSecondary
 @Composable
 fun ComparisonView(
     result: TranscriptionResult,
-    onPlayAudioSegment: (Long, Long) -> Unit,
+    currentPositionMs: Long = 0L,
+    isPlaying: Boolean = false,
+    onTogglePlay: () -> Unit = {},
+    onPlayAudioSegment: (Long, Long, Boolean) -> Unit,
+    onSpeedChange: (Float) -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     var selectedTab by remember { mutableIntStateOf(0) }
     var showDiffHighlights by remember { mutableStateOf(true) }
+    var currentSpeed by remember { mutableFloatStateOf(1.0f) }
+    var showSpeedMenu by remember { mutableStateOf(false) }
     val clipboardManager = LocalClipboardManager.current
 
     val tabs = listOf("智能润色", "原始转录", "逐句对照")
@@ -99,7 +114,7 @@ fun ComparisonView(
                 FilterChip(
                     selected = showDiffHighlights,
                     onClick = { showDiffHighlights = !showDiffHighlights },
-                    label = { Text("标记口语语气词", fontSize = 12.sp) }
+                    label = { Text("标记口语废话与停顿", fontSize = 12.sp) }
                 )
             } else {
                 Spacer(modifier = Modifier.width(1.dp))
@@ -130,7 +145,8 @@ fun ComparisonView(
         // Tab Content
         Box(
             modifier = Modifier
-                .fillMaxSize()
+                .weight(1f)
+                .fillMaxWidth()
                 .padding(horizontal = 16.dp)
         ) {
             when (selectedTab) {
@@ -171,20 +187,82 @@ fun ComparisonView(
                     }
                 }
                 2 -> {
-                    // Sentence-by-sentence comparison list
+                    // Sentence-by-sentence comparison list with real-time active audio highlight
                     LazyColumn(
                         modifier = Modifier.fillMaxSize(),
                         verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         items(result.segments) { segment ->
+                            val isCurrentSegmentActive = currentPositionMs in segment.startTimeMs..segment.endTimeMs
                             SegmentItemView(
                                 segment = segment,
                                 onPlayAudio = onPlayAudioSegment,
+                                isActive = isCurrentSegmentActive,
                                 showDiff = showDiffHighlights
                             )
                         }
                         item {
                             Spacer(modifier = Modifier.height(20.dp))
+                        }
+                    }
+                }
+            }
+        }
+
+        // Persistent Audio Control Bar
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(horizontal = 16.dp, vertical = 8.dp),
+            shape = RoundedCornerShape(14.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(defaultElevation = 3.dp)
+        ) {
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 8.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.SpaceBetween
+            ) {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    IconButton(onClick = onTogglePlay) {
+                        Icon(
+                            imageVector = if (isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                            contentDescription = if (isPlaying) "暂停" else "播放原声",
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                    val curSec = currentPositionMs / 1000
+                    val totalSec = result.durationMs / 1000
+                    Text(
+                        text = String.format("%02d:%02d / %02d:%02d", curSec / 60, curSec % 60, totalSec / 60, totalSec % 60),
+                        fontSize = 12.sp,
+                        color = TextSecondary,
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+
+                // Speed Selector
+                Box {
+                    OutlinedButton(onClick = { showSpeedMenu = true }) {
+                        Icon(Icons.Default.Speed, contentDescription = null, modifier = Modifier.size(16.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text(text = "${currentSpeed}x", fontSize = 12.sp)
+                    }
+                    DropdownMenu(
+                        expanded = showSpeedMenu,
+                        onDismissRequest = { showSpeedMenu = false }
+                    ) {
+                        listOf(0.75f, 1.0f, 1.25f, 1.5f, 2.0f).forEach { speed ->
+                            DropdownMenuItem(
+                                text = { Text("${speed}x") },
+                                onClick = {
+                                    currentSpeed = speed
+                                    onSpeedChange(speed)
+                                    showSpeedMenu = false
+                                }
+                            )
                         }
                     }
                 }

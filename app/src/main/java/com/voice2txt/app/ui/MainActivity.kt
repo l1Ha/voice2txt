@@ -54,9 +54,7 @@ class MainActivity : ComponentActivity() {
 
     private val requestPermissionLauncher = registerForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()
-    ) { permissions ->
-        // Handle permissions
-    }
+    ) { _ -> }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -115,6 +113,9 @@ fun MainAppContent(
     val transcribeState by transcribeViewModel.uiState.collectAsState()
     val isRecording by transcribeViewModel.isRecording.collectAsState()
 
+    val currentAudioPos by transcribeViewModel.audioPlayer.currentPositionMs.collectAsState()
+    val isAudioPlaying by transcribeViewModel.audioPlayer.isPlaying.collectAsState()
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         bottomBar = {
@@ -142,13 +143,24 @@ fun MainAppContent(
             }
         }
     ) { innerPadding ->
-        // If viewing an inspection result (either just transcribed or opened from history)
         if (viewingResult != null) {
             ResultComparisonScreen(
                 result = viewingResult!!,
-                onBack = { viewingResult = null },
-                onPlayAudioSegment = { startMs, endMs ->
-                    transcribeViewModel.audioPlayer.playSegment(startMs, endMs)
+                currentPositionMs = currentAudioPos,
+                isPlaying = isAudioPlaying,
+                onTogglePlay = {
+                    if (isAudioPlaying) transcribeViewModel.audioPlayer.pause()
+                    else transcribeViewModel.audioPlayer.play()
+                },
+                onSpeedChange = { speed ->
+                    transcribeViewModel.audioPlayer.setSpeed(speed)
+                },
+                onBack = {
+                    transcribeViewModel.audioPlayer.pause()
+                    viewingResult = null
+                },
+                onPlayAudioSegment = { startMs, endMs, loop ->
+                    transcribeViewModel.audioPlayer.playSegment(startMs, endMs, loop)
                 },
                 onExport = { format, target ->
                     transcribeViewModel.exportResult(viewingResult!!, format, target)
@@ -166,7 +178,6 @@ fun MainAppContent(
                     )
                 }
                 is TranscribeUiState.Success -> {
-                    // Automatically transition to comparison screen
                     viewingResult = state.result
                     transcribeViewModel.resetState()
                 }
